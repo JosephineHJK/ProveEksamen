@@ -1,0 +1,90 @@
+@page "/AddGrade"
+@using global::Shared
+@using Microsoft.AspNetCore.Components
+@using BlazorServer.Data
+@inject IStudentService studentService
+<h3>AddGrade</h3>
+
+<div class="form-group field">
+    @if (students == null)
+    {
+        <label>Loading students...</label>
+    }
+    else if (!students.Any())
+    {
+        <label>No students, you cannot create a grade</label>
+    }
+    else
+    {
+        <h3>Add Grade</h3>
+        <div class="form-group field">
+            <label>Title:</label>
+            <input type="text" @bind="gradeInCourse"/>
+        </div>
+        <div class="form-group field">
+            <label>Assignee:</label>
+            <select @bind="studentId">
+                <option>Choose</option>
+                @foreach (Student student in students)
+                {
+                    <option value="@student.Id">@student.Name</option>
+                }
+            </select>
+        </div>
+        <div class="button-row">
+            @if (!string.IsNullOrEmpty(msg))
+            {
+                <label style="color: red">@msg</label>
+            }
+            <button @onclick="Create" class="acceptbtn">Add</button>
+        </div>
+    }
+</div>
+
+@code {
+    private IEnumerable<Student>? students;
+    private string? studentId;
+    private string gradeInCourse = "";
+
+    private string msg = "";
+    
+    protected override async Task OnInitializedAsync()
+    {
+        msg = "";
+        try
+        {
+            students = await studentService.GetAllStudentsAsync();
+        }
+        catch (Exception e)
+        {
+            Console.WriteLine(e);
+            msg = e.Message;
+        }
+    }
+
+    private async Task Create()
+    {
+        msg = "";
+        if (studentId == null)
+        {
+            msg = "You must select a student!";
+            return;
+        }
+        if (string.IsNullOrEmpty(gradeInCourse))
+        {
+            msg = "Grade cannot be empty!";
+            return;
+        }
+
+        try
+        {
+            AddGradeDto dto = new(studentId, gradeInCourse);
+            await studentService.AddGradeToStudentAsync(dto);
+        }
+        catch (Exception e)
+        {
+            Console.WriteLine(e);
+            msg = e.Message;
+        }
+    }
+}
